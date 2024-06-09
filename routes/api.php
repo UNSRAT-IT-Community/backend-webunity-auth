@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +15,18 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::middleware('authorization')->group(function () {
+    Route::get(
+        '/test-api',
+        function () {
+            return response()->json([
+                'status' => 200,
+                'message' => 'Welcome to the API',
+                'data' => null
+            ]);
+        }
+    );
 });
+
+Route::post('/auth/refresh-token', [AuthController::class, 'refreshTokenLogin']);
+Route::post('/auth/logout', [AuthController::class, 'logout']);
