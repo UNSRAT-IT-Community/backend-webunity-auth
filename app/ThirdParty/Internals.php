@@ -2,6 +2,7 @@
 
 namespace App\ThirdParty;
 
+
 class Internals
 {
     /**
@@ -19,7 +20,7 @@ class Internals
      */
     public static function getUserContextUsername(): string
     {
-        return $GLOBALS['USER_DATA']->username;
+        return $GLOBALS['USER_DATA']->name;
     }
 
     /**
@@ -37,7 +38,7 @@ class Internals
      */
     public static function getUserContextRole(): string
     {
-        return $GLOBALS['USER_DATA']->role;
+        return $GLOBALS['USER_DATA']->role_id;
     }
 
     /**
@@ -46,6 +47,6 @@ class Internals
      */
     public static function getUserContextVerified(): bool
     {
-        return $GLOBALS['USER_DATA']->is_verified;
+        return $GLOBALS['USER_DATA']->is_accepted;
     }
 }
