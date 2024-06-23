@@ -53,36 +53,36 @@ class User extends Authenticatable
 
     public function roles():BelongsTo
     {
-        return $this->belongsTo(Role::class, 'role_id');
+        return $this->belongsTo(Role::class, 'role_id', 'id');
     }
 
     public function divisions():BelongsTo
     {
-        return $this->belongsTo(Division::class, 'division_id');
+        return $this->belongsTo(Division::class, 'division_id', 'id');
     }
 
     public function announcements(): HasMany
     {
-        return $this->hasMany(Announcement::class);
+        return $this->hasMany(Announcement::class, 'creator_id', 'id');
     }
 
     public function upcomingEvents(): HasMany
     {
-        return $this->hasMany(UpcomingEvent::class);
+        return $this->hasMany(UpcomingEvent::class, 'creator_id', 'id');
     }
 
     public function galleries(): HasMany
     {
-        return $this->hasMany(Gallery::class);
+        return $this->hasMany(Gallery::class, 'creator_id', 'id');
     }
 
     public function communityAds(): HasMany
     {
-        return $this->hasMany(CommunityAd::class);
+        return $this->hasMany(CommunityAd::class, 'creator_id', 'id');
     }
 
     public function chatbots(): HasMany
     {
-        return $this->hasMany(Chatbot::class);
+        return $this->hasMany(Chatbot::class, 'user_id', 'id');
     }
 }

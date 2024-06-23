@@ -4,6 +4,7 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -42,7 +43,24 @@ class Handler extends ExceptionHandler
     public function register(): void
     {
         $this->reportable(function (Throwable $e) {
-            //
+            $this->renderable(function (MethodNotAllowedHttpException $e, $request) {
+                return response()->json([
+                    'error' => 'Method dilarang',
+                    'message' => 'Metode yang dipakai dilarang untuk endpoint ini'
+                ], 405);
+            });
         });
+    }
+
+    public function render($request, Throwable $e)
+    {
+        if ($e instanceof MethodNotAllowedHttpException) {
+            return response()->json([
+                'error' => 'Method dilarang',
+                'message' => 'Metode yang dipakai dilarang untuk endpoint ini'
+            ], 405);
+        }
+
+        return parent::render($request, $e);
     }
 }
