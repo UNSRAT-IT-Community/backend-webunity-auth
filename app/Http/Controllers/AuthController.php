@@ -34,13 +34,14 @@ class AuthController extends Controller
 
                 $data = $request->only($expectedField);
 
+
                 if (!$request->hasFile('profile_picture') || !$request->file('profile_picture')->isValid()) {
                     return response()->json([
                         'error' => 'Foto profil harus berupa file'
                     ], 400);
                 }
 
-                $profile_picture = $request->file('profile_picture')->store('profile_pictures', 'public');
+
 
                 $this->validate($request, [
                     'name' => 'required|string',
@@ -70,6 +71,8 @@ class AuthController extends Controller
                     'division.required' => "Divisi tidak boleh kosong",
                 ]
                 );
+
+                $profile_picture = $request->file('profile_picture')->store('profile_pictures', 'public');
 
 
                 User::create([
