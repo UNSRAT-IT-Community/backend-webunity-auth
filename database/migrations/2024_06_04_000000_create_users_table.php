@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->integer('nim');
+            $table->string('nim');
             $table->string('email')->unique();
             $table->string('profile_picture');
             $table->uuid('role_id')->references('id')->on('role');
