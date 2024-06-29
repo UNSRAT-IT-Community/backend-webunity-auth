@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\DivisionController;
+use App\Http\Controllers\ValidationController;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Division;
@@ -54,3 +55,5 @@ Route::post('/auth/logout', [AuthController::class, 'logout']);
 
 Route::post('/insert_role', [RoleController::class, 'insert']);
 Route::post('/insert_division', [DivisionController::class, 'insert']);
+
+Route::post('/auth/validation', [ValidationController::class, 'validateTokenService']);

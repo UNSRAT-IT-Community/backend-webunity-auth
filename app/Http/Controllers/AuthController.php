@@ -162,7 +162,6 @@ class AuthController extends Controller
 
     private function generatePairToken($user)
     {
-
         /** Set TTL
          * 1 day for auth token
          * 7 days for default refresh token
@@ -192,7 +191,11 @@ class AuthController extends Controller
         $refreshTokenPayload['data']['id'] = $user->id;
         $refreshTokenPayload['exp'] = $refreshTokenTTL;
 
-        $privateKey = file_get_contents(base_path('/' . env('JWT_PRIVATE_KEY')));
+        $privateKeyPath = base_path('private_key.pem');
+        if (!file_exists($privateKeyPath)) {
+            throw new \Exception("Private key file not found.");
+        }
+        $privateKey = file_get_contents($privateKeyPath);
 
         $jwtPair = [
             'access_token' => JWT::encode($accessTokenPayload, $privateKey, 'RS256'),
@@ -247,6 +250,8 @@ class AuthController extends Controller
         return $jwtPair;
     }
 
+    
+
     public function logout(Request $request)
     {
         try {
@@ -266,4 +271,3 @@ class AuthController extends Controller
     }
 
 }
-
