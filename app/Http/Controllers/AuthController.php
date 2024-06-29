@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use App\ThirdParty\Internals;
 use App\Exceptions\UnauthorizedAccess;
+use App\Exceptions\UnexpectedField;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -22,40 +23,102 @@ class AuthController extends Controller
     {
         $role= Role::where("name", "Anggota")->first();
         $role_id = $role->id;
+
         try {
-            $this->validate($request, [
-                'name' => 'required|string',
-                'nim' => 'required|unique:users|numeric',
-                'email' => 'required|email|unique:users',
-                'profile_picture' => 'required',
-                'password' => 'required|min:6',
-            ]);
+                $expectedField = ['name', 'nim', 'email', 'profile_picture', 'password', 'division', 'password_confirmation'];
 
-            User::create([
-                'name' => $request->input('name'),
-                'nim' => $request->input('nim'),
-                'email' => $request->input('email'),
-                'profile_picture' => $request->input('profile_picture'),
-                'role_id' => $role_id,
-                'division_id' => $this->getDivision($request->input('division')),
-                'password' => Hash::make($request->input('password')),
-            ]);
+                $unexpectedFields = array_diff(array_keys($request->all()), $expectedField);
+                if (!empty($unexpectedFields)) {
+                    throw new UnexpectedField($unexpectedFields);
+                }
 
-            return $this->sendSuccessResponse(null, 'Registration Successful');
-        } catch (ValidationException $e) {
-            return $this->sendBadRequestResponse($e->errors());
-        } catch (Throwable $e) {
-            Log::error($e->getMessage());
-            return $this->sendInternalServerErrorResponse($e);
-        }
+                $data = $request->only($expectedField);
+
+
+                if (!$request->hasFile('profile_picture') || !$request->file('profile_picture')->isValid()) {
+                    return response()->json([
+                        'error' => 'Foto profil harus berupa file'
+                    ], 400);
+                }
+
+
+
+                $this->validate($request, [
+                    'name' => 'required|string',
+                    'nim' => 'required|unique:users|min:12|max:12',
+                    'email' => 'required|email|unique:users',
+                    'profile_picture' => 'required|image|mimes:jpeg,jpg,png|max:5120',
+                    'password' => 'required|min:8|confirmed',
+                    'division' => 'required'
+                ],
+                [
+                    'name.required' => "Nama tidak boleh kosong",
+                    'name.string' => "Nama harus string",
+                    'nim.required' => "NIM tidak boleh kosong",
+                    'nim.unique' => "NIM tersebut sudah dipakai",
+                    'nim.min' => "NIM harus minimal 12 karakter",
+                    'nim.max' => "NIM tidak boleh lebih dari 12 karakter",
+                    'email.required' => "Email tidak boleh kosong",
+                    'email.email' => "Email harus sesuai format email",
+                    'email.unique' => "Email tersebut sudah dipakai",
+                    'profile_picture.required' => "Foto Profil tidak boleh kosong",
+                    'profile_picture.image' => "Foto profil harus berupa gambar",
+                    'profile_picture.mimes' => "Foto profil harus dalam format jpeg, jpg dan png",
+                    'profile_picture.max' => "Foto profil tidak boleh lebih dari 5mb",
+                    'password.required' => "Password tidak boleh kosong",
+                    'password.min' => "Password minimal 8 karakter",
+                    'password.confirmed' => "Password tidak sama dengan password yang kamu ketik",
+                    'division.required' => "Divisi tidak boleh kosong",
+                ]
+                );
+
+                $profile_picture = $request->file('profile_picture')->store('profile_pictures', 'public');
+
+
+                User::create([
+                    'name' => $data['name'],
+                    'nim' => $data['nim'],
+                    'email' => $data['email'],
+                    'profile_picture' => $profile_picture,
+                    'role_id' => $role_id,
+                    'division_id' => $this->getDivision($data['division'],),
+                    'password' => Hash::make($data['password'],),
+                ]);
+
+                return $this->sendSuccessResponse(null, 'Registrasi berhasil');
+            } catch (ValidationException $e) {
+                return $this->sendBadRequestResponse($e->errors());
+            } catch(UnexpectedField $e){
+                return response()->json([
+                    'error' => $e->getMessage()
+                ], 400);
+            } catch (Throwable $e) {
+                Log::error($e->getMessage());
+                return $this->sendInternalServerErrorResponse($e);
+            }
     }
+
     public function login(Request $request)
     {
         try {
+            $expectedField = ['email','password'];
+
+            $unexpectedFields = array_diff(array_keys($request->all()), $expectedField);
+            if (!empty($unexpectedFields)) {
+                throw new UnexpectedField($unexpectedFields);
+            }
+
+            $data = $request->only($expectedField);
+
             // Validasi form login
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($data, [
                 'email' => 'required|email',
                 'password' => 'required',
+            ],
+            [
+                'email.required' => "Email tidak boleh kosong",
+                'email.email' => "Email harus sesuai format email",
+                'password.required' => "Password tidak boleh kosong",
             ]);
 
             // Response 422 jika validasi gagal
@@ -64,14 +127,17 @@ class AuthController extends Controller
             }
 
             $token = $this->emailPasswordLogin($request->email, $request->password);
-            return $this->sendSuccessResponse($token, "Login success");
-
-        } catch (UnauthorizedAccess $e) {
-            return $this->sendUnauthorizedResponse("Invalid email or password.");
-        } catch (Throwable $e) {
-            Log::error($e->getMessage());
-            return $this->sendInternalServerErrorResponse($e);
-        }
+            return $this->sendSuccessResponse($token, "Login berhasil");
+            } catch (UnauthorizedAccess $e) {
+                return $this->sendUnauthorizedResponse("Email atau Password salah");
+            } catch(UnexpectedField $e){
+                return response()->json([
+                    'error' => $e->getMessage()
+                ], 400);
+            } catch (Throwable $e) {
+                Log::error($e->getMessage());
+                return $this->sendInternalServerErrorResponse($e);
+            }
     }
 
     private function emailPasswordLogin(string $email, string $password)
@@ -83,11 +149,12 @@ class AuthController extends Controller
             !$user->is_accepted == "accepted"||
             !Hash::check($password, $user->password)
         ) {
-            throw new UnauthorizedAccess("Invalid email or password");
+            throw new UnauthorizedAccess("Email atau Password salah");
         }
 
         return $this->generatePairToken($user);
     }
+
     private function ttl(int $minute): int
     {
         return time() + ($minute * 60);
@@ -142,15 +209,16 @@ class AuthController extends Controller
             $user = User::find($userId);
 
             if (empty($user)) {
-                throw new UnauthorizedAccess("Invalid token");
+                throw new UnauthorizedAccess("Token tidak Valid");
             }
 
             $newToken = $this->generatePairToken($user);
-            return $this->sendSuccessResponse($newToken, "Login success");
+            return $this->sendSuccessResponse($newToken, "Login Berhasil");
         } catch (Throwable $e) {
             return $this->sendInternalServerErrorResponse($e);
         }
     }
+
     private function generateExpiredToken()
     {
         $accessTokenPayload = [
@@ -183,7 +251,7 @@ class AuthController extends Controller
     {
         try {
             $token = $this->generateExpiredToken();
-            return $this->sendSuccessResponse($token, 'Logout success');
+            return $this->sendSuccessResponse($token, 'Logout berhasil');
         } catch (Throwable $e) {
             return $this->sendInternalServerErrorResponse($e);
         }
