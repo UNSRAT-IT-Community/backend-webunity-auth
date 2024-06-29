@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Builder;
 
 class User extends Authenticatable
 {
@@ -84,5 +85,16 @@ class User extends Authenticatable
     public function chatbots(): HasMany
     {
         return $this->hasMany(Chatbot::class, 'user_id', 'id');
+    }
+
+    /**
+     * Scope a query to only include specific columns.
+     *
+     * @param Builder $query
+     * @return Builder
+     */
+    public function scopeSelectMinimal($query)
+    {
+        return $query->select('id', 'name', 'profile_picture', 'email', 'role_id', 'division_id');
     }
 }
