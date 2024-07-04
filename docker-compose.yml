@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: backend-webunity-auth
+        container_name: backend_webunity_auth
+        ports:
+            - "7001:7001"
+        volumes:
+            - .:/var/www
+        environment:
+            - APP_ENV=local
+            - APP_DEBUG=true
+        networks:
+            - backend_webunity_auth
+
+    web:
+        image: nginx:alpine
+        container_name: nginx
+        ports:
+            - "80:80"
+        volumes:
+            - .:/var/www
+            - ./nginx.conf:/etc/nginx/conf.d/default.conf
+        networks:
+            - laravel
+
+networks:
+    laravel:
+        driver: bridge
